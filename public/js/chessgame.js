@@ -1,10 +1,12 @@
-const socket = io(); 
+// ✅ Connect to your Render backend instead of localhost
+const socket = io("https://chess-com-jdr6.onrender.com"); 
+
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
 
 let draggedPiece = null;
 let sourceSquare = null;
-let playerRole = null; // ✅ spelling fixed
+let playerRole = null;
 
 const renderBoard = () => {
   const board = chess.board();
@@ -25,9 +27,9 @@ const renderBoard = () => {
         const pieceElement = document.createElement("div");
         pieceElement.classList.add("piece", square.color === "w" ? "white" : "black");
 
-        pieceElement.innerText = getPieceUnicode(square); 
+        pieceElement.innerText = getPieceUnicode(square);
 
-        // ✅ Only allow dragging for own pieces and correct turn
+        // ✅ Only allow dragging for your own pieces and your turn
         pieceElement.draggable = playerRole === square.color && playerRole === chess.turn();
 
         pieceElement.addEventListener("dragstart", (e) => {
@@ -65,6 +67,7 @@ const renderBoard = () => {
     });
   });
 
+  // ✅ Flip board for black player
   if (playerRole === 'b') {
     boardElement.classList.add("flipped");
   } else {
@@ -81,8 +84,8 @@ const handleMove = (source, target) => {
 
   const result = chess.move(move);
   if (result) {
-    socket.emit("move", move); // ✅ emit only if legal move
-    renderBoard(); // optional: re-render locally
+    socket.emit("move", move);
+    renderBoard();
   } else {
     alert("Illegal move!");
   }
@@ -100,7 +103,7 @@ const getPieceUnicode = (piece) => {
   return unicodePieces[piece.type]?.[piece.color] || "";
 };
 
-// ✅ Set player role
+// ✅ Set player role from backend
 socket.on("playerRole", function (role) {
   playerRole = role;
   console.log("Assigned role:", playerRole);
@@ -119,11 +122,11 @@ socket.on("boardState", function (fen) {
   renderBoard();
 });
 
-// ✅ Apply move from another player
+// ✅ Apply move received from another player
 socket.on("move", function (move) {
-  chess.move(move); // ✅ fixed: used move, not 'fen'
+  chess.move(move);
   renderBoard();
 });
 
-// ✅ Initial render
+// ✅ Initial board render
 renderBoard();
